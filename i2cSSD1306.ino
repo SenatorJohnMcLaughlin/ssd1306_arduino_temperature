@@ -2,6 +2,10 @@
 #include <Wire.h>
 #include <avr/pgmspace.h>
 
+// >> DS18B20 Tutorial: https://draeger-it.blog/arduino-lektion-48-temperatursensor-ds18b20/?cn-reloaded=1
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
 #define I2C_ADDRESS 0x3C
 
 // >>  https://github.com/greiman/SSD1306Ascii/blob/master/src/SSD1306Ascii.h
@@ -22,7 +26,17 @@
 
 #define NUMBER_HEIGHT  48
 #define NUMBER_WIDTH 32
-#define DISPLAY_CONTRAST_VALUE 0    // 0-255
+#define DISPLAY_CONTRAST_VALUE 255    // 0-255
+
+#define TEMPERATURE_PIN 2
+
+OneWire oneWire(TEMPERATURE_PIN);
+DallasTemperature sensors(&oneWire);
+
+long maxDelay = 2500;
+int yOffset=0;
+int commaWidth = 7;
+byte digitStartX = 16;
 
 static const byte num_one[] PROGMEM = {
     0,	0,	0,	0,	0,	0,	0,	0,	0,	56,	124,	124,	124,	124,	124,	124,	252,	252,	252,	252,	248,	248,	240,	224,	0,	0,	0,	0,	0,	0,	0,	0,
@@ -117,8 +131,6 @@ static const byte num_zero[] PROGMEM = {
 };
 
 const byte *const numbers[] PROGMEM = {num_zero,num_one,num_two,num_three,num_four,num_five,num_six,num_seven,num_eight,num_nine};
-int yOffset=0;
-int commaWidth = 7;
 // based on: https://github.com/ex-punctis/SSD1306_OLED_HW_I2C/blob/master/SSD1306_OLED_HW_I2C.c
 void initDisplay()
 {
@@ -251,6 +263,40 @@ void drawComma(byte x, byte y)
   Wire.endTransmission(); 
 }
 
+void drawMinus(byte x, byte y)
+{
+  setOledCursor(x,y+3);
+  Wire.beginTransmission(I2C_ADDRESS);
+  Wire.write(0x40);
+
+  Wire.write(B00000110);
+  for (int i=0;i<digitStartX-3;i++)
+  {
+    Wire.write(B00001111);
+  }
+  Wire.write(B00000110);
+  
+  Wire.endTransmission();
+}
+
+void drawDegree(byte x, byte y)
+{
+  setOledCursor(x+2,y);
+  Wire.beginTransmission(I2C_ADDRESS);
+  Wire.write(0x40);
+
+  Wire.write(B00111100);
+
+  Wire.write(B00100100);
+  Wire.write(B01000010);
+  Wire.write(B01000010);
+  Wire.write(B00100100);
+  
+  Wire.write(B00111100);
+  
+  Wire.endTransmission();
+}
+
 void clearScreen()
 {
   byte fillVal = 0; //B10101010;
@@ -271,6 +317,40 @@ void clearScreen()
   setOledCursor(0,0);
 }
 
+void drawFloat(float value)
+{
+  drawDegree(digitStartX+32+32+commaWidth+32, yOffset);
+  if (value>99)
+  {
+    drawNumber(digitStartX,0,0);
+    drawNumber(digitStartX+32,0,0);
+    drawNumber(digitStartX+32+32+5,0,0);
+    return;
+  }
+  else
+  {
+    float absValue = sqrt(value*value);
+    int firstDigit = absValue/10;
+    int secondDigit = absValue-(firstDigit*10);
+    int thrdDigit = absValue*10 - (floor(absValue))*10;
+    if (firstDigit>0)
+      drawNumber(digitStartX,yOffset,firstDigit);
+    drawNumber(digitStartX+32,yOffset,secondDigit);
+    drawComma(digitStartX+32+32,yOffset);
+    drawNumber(digitStartX+32+32+commaWidth,yOffset,thrdDigit);
+  }
+  if (value<0)
+    drawMinus(0,yOffset);
+
+}
+
+float getTemp()
+{
+  sensors.requestTemperatures(); 
+  float celsius = sensors.getTempCByIndex(0);
+  return celsius;
+}
+
 void setup() {
   Serial.begin(9600);
   initDisplay();
@@ -279,33 +359,11 @@ void setup() {
 }
 
 
-void drawFloat(float value)
-{
-  if (value>99)
-  {
-    drawNumber(0,0,0);
-    drawNumber(32,0,0);
-    drawNumber(32+32+5,0,0);
-    return;
-  }
-  else
-  {
-    int firstDigit = value/10;
-    int secondDigit = value-(firstDigit*10);
-    int thrdDigit = value*10 - (floor(value))*10;
-    if (firstDigit>0)
-      drawNumber(0,yOffset,firstDigit);
-    drawNumber(32,yOffset,secondDigit);
-    drawComma(32+32,yOffset);
-    drawNumber(32+32+commaWidth,yOffset,thrdDigit);
-  }
-}
-long maxDelay = 300;
 void loop() {
   // put your main code here, to run repeatedly:
   for (int i=0;i<10;i++)
   {
-    drawFloat((float)(i*13)/5);
+    drawFloat(getTemp());
     delay(maxDelay);
   }
 }
