@@ -9,8 +9,8 @@
 #define I2C_ADDRESS 0x3C
 
 // >>  https://github.com/greiman/SSD1306Ascii/blob/master/src/SSD1306Ascii.h
-#define SSD1306_CMD 0  // Command
-#define SSD1306_DATA 1 // Data
+#define SSD1306_CMD 0x00  // Command
+#define SSD1306_DATA 0x40 // Data
 #define SSD1306_DATA_BUFFER 2 // Data-buffered
 
 
@@ -29,11 +29,11 @@
 #define DISPLAY_CONTRAST_VALUE 255    // 0-255
 
 #define TEMPERATURE_PIN 2
+#define READ_INTERVALL_MS 3000
 
 OneWire oneWire(TEMPERATURE_PIN);
 DallasTemperature sensors(&oneWire);
 
-long maxDelay = 2500;
 int yOffset=0;
 int commaWidth = 7;
 byte digitStartX = 16;
@@ -171,7 +171,6 @@ void initDisplay()
   Wire.write(0x00);
   
   Wire.write(0xD5); // --set display clock divide ratio/oscillator frequency
-  
   Wire.write(0xF0); // --set divide ratio
   
   Wire.write(0xD9); // Set pre-charge period
@@ -226,7 +225,7 @@ void drawDots(byte x, byte y,byte value)
 {
   setOledCursor(x,y);
   Wire.beginTransmission(I2C_ADDRESS);
-  Wire.write(0x40);
+  Wire.write(SSD1306_DATA);
   Wire.write(value);
   Wire.endTransmission(); 
 }
@@ -240,7 +239,7 @@ void drawNumber(byte x, byte y, int index )
   {
     setOledCursor(x,y+j);
     Wire.beginTransmission(I2C_ADDRESS);
-    Wire.write(0x40);
+    Wire.write(SSD1306_DATA);
     for (int i=0;i<NUMBER_WIDTH;i++)
     {
       Wire.write((byte)buffer[i+j*NUMBER_WIDTH]);
@@ -253,7 +252,7 @@ void drawComma(byte x, byte y)
 {
   setOledCursor(x+1,y+5);
   Wire.beginTransmission(I2C_ADDRESS);
-  Wire.write(0x40);
+  Wire.write(SSD1306_DATA);
 
   Wire.write(B00111100);
   for (int i=0;i<commaWidth-4;i++)
@@ -267,7 +266,7 @@ void drawMinus(byte x, byte y)
 {
   setOledCursor(x,y+3);
   Wire.beginTransmission(I2C_ADDRESS);
-  Wire.write(0x40);
+  Wire.write(SSD1306_DATA);
 
   Wire.write(B00000110);
   for (int i=0;i<digitStartX-3;i++)
@@ -283,7 +282,7 @@ void drawDegree(byte x, byte y)
 {
   setOledCursor(x+2,y);
   Wire.beginTransmission(I2C_ADDRESS);
-  Wire.write(0x40);
+  Wire.write(SSD1306_DATA);
 
   Wire.write(B00111100);
 
@@ -307,7 +306,7 @@ void clearScreen()
   for (byte i=0;i<numCols;i++)
   {
     Wire.beginTransmission(I2C_ADDRESS);
-    Wire.write(0x40);
+    Wire.write(SSD1306_DATA);
     for (byte j=0;j<numRows;j++)
     {  
       Wire.write(fillVal);
@@ -361,9 +360,6 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  for (int i=0;i<10;i++)
-  {
-    drawFloat(getTemp());
-    delay(maxDelay);
-  }
+  drawFloat(getTemp());
+  delay(READ_INTERVALL_MS);
 }
