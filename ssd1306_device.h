@@ -1,4 +1,3 @@
-//Attiny i2c address:  https://bitbucket.org/tinusaur/ssd1306xled/src/default/ssd1306xled/ssd1306xled.h
 #define I2C_ADDRESS 0x3C
 
 // >>  https://github.com/greiman/SSD1306Ascii/blob/master/src/SSD1306Ascii.h

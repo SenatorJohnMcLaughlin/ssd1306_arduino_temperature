@@ -77,7 +77,8 @@ int commaWidth = 7;
 byte digitStartX = 16;
 float previousTemp = 0.0;
 
-// based on: https://github.com/ex-punctis/SSD1306_OLED_HW_I2C/blob/master/SSD1306_OLED_HW_I2C.c
+/*    based on: https://github.com/ex-punctis/SSD1306_OLED_HW_I2C/blob/master/SSD1306_OLED_HW_I2C.c & 
+ *    https://github.com/datacute/Tiny4kOLED/blob/master/src/Tiny4kOLED_common.h  */
 void initDisplay()
 {
   Wire.begin();
