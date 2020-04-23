@@ -76,6 +76,16 @@ int yOffset=0;
 int commaWidth = 7;
 byte digitStartX = 16;
 float previousTemp = 0.0;
+boolean displayBottomUp = true;
+
+void flipDisplay()
+{
+  Wire.beginTransmission(I2C_ADDRESS);
+  Wire.write(SSD1306_CMD);
+  Wire.write(0xA0);
+  Wire.write(0xC0);
+  Wire.endTransmission(); 
+}
 
 /*    based on: https://github.com/ex-punctis/SSD1306_OLED_HW_I2C/blob/master/SSD1306_OLED_HW_I2C.c & 
  *    https://github.com/datacute/Tiny4kOLED/blob/master/src/Tiny4kOLED_common.h  */
@@ -268,6 +278,8 @@ float getTemp()
 void setup() {
   watchdogOn(); // Watchdog timer einschalten.
   initDisplay();
+  if (displayBottomUp)
+    flipDisplay();
   delay(20);
   changeContrast(DISPLAY_CONTRAST_VALUE);
   clearScreen();
